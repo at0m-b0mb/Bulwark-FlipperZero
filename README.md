@@ -69,7 +69,7 @@ video sender is a single wide lump. Only advertising lights up all three.
 The six bars sit at their real spacing across 2402–2480 MHz, so the picture is
 a picture of the band. The three advertising channels are solid; the Wi-Fi
 centres are drawn as texture, because they are context rather than evidence.
-The dotted line is the baseline you stored for this place. The underlined
+The dotted line is the baseline you stored for this place. The highlighted
 label is the channel the radio is parked on right now.
 
 | Is it following me? | Why it is not higher | The whole breakdown |

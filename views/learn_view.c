@@ -37,8 +37,8 @@ static const LearnPanel panels[] = {
         "WHY PHONES LISTEN",
         {
             "Bluetooth devices shout",
-            "'I am here' several times",
-            "a second. Phones listen.",
+            "'I am here' many times a",
+            "second. Phones listen.",
         },
     },
     {
@@ -53,16 +53,16 @@ static const LearnPanel panels[] = {
         "WHAT A FLOOD LOOKS LIKE",
         {
             "A room: busy a few %.",
-            "A spammer: a third of the",
-            "time, on all three.",
+            "A spammer: a third of",
+            "the time, on all three.",
         },
     },
     {
         "WHAT BULWARK HEARS",
         {
-            "Test mode measures energy",
+            "Test mode reads energy",
             "and decodes nothing. No",
-            "address, name or payload.",
+            "address, name, payload.",
         },
     },
     {

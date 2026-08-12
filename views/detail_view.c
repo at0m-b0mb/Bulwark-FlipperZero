@@ -13,7 +13,8 @@
 #include <string.h>
 #include <stdio.h>
 
-#define DV_ROWS_MAX 56
+/* A demo sweep with every ceiling in force is the longest list. */
+#define DV_ROWS_MAX 72
 #define DV_LEFT_LEN 26
 /* Wide enough for what -Werror=format-truncation believes an int can print,
  * not for what these values actually are. */
@@ -21,7 +22,7 @@
 #define DV_VISIBLE 5
 #define DV_ROW_H 9
 #define DV_FIRST_BASE 23
-#define DV_WRAP 25
+#define DV_WRAP 23
 
 typedef enum {
     DvRowSection = 0,
@@ -100,7 +101,12 @@ static void dv_pct(char* out, size_t size, uint16_t ppt) {
     snprintf(out, size, "%u.%u%%", ppt / 10u, ppt % 10u);
 }
 
-void detail_view_update(DetailView* v, const BwScore* score, const BwSweep* sweep, bool demo) {
+void detail_view_update(
+    DetailView* v,
+    const BwScore* score,
+    const BwSweep* sweep,
+    const char* demo_name,
+    const char* demo_blurb) {
     furi_assert(v);
 
     with_view_model(
@@ -185,9 +191,17 @@ void detail_view_update(DetailView* v, const BwScore* score, const BwSweep* swee
                 dv_add(m, DvRowFact, "Samples", val);
                 snprintf(val, sizeof(val), "%u Hz", sweep->rate_hz);
                 dv_add(m, DvRowFact, "Sample rate", val);
-                dv_add(m, DvRowFact, "Source", demo ? "demo" : "radio");
+                dv_add(m, DvRowFact, "Source", demo_name ? "demo" : "radio");
 
-                /* 5. The thing the app cannot do, on the same screen as the
+                /* 5. If none of this came off the antenna, say which band it
+                 *    did come from, right here where the numbers are read. */
+                if(demo_name) {
+                    dv_add(m, DvRowSection, "DEMO BAND", NULL);
+                    dv_add(m, DvRowFact, demo_name, "");
+                    if(demo_blurb) dv_add_paragraph(m, demo_blurb);
+                }
+
+                /* 6. The thing the app cannot do, on the same screen as the
                  *    thing it just did. */
                 dv_add(m, DvRowSection, "NOT MEASURED", NULL);
                 dv_add_paragraph(

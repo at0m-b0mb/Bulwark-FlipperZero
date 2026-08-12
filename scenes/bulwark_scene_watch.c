@@ -98,7 +98,12 @@ bool bulwark_scene_watch_on_event(void* context, SceneManagerEvent event) {
             bulwark_click(app);
             return true;
         }
-        detail_view_update(app->detail_view, &app->last_score, &app->last_sweep, app->demo);
+        detail_view_update(
+            app->detail_view,
+            &app->last_score,
+            &app->last_sweep,
+            app->demo ? bw_demo_name(app->demo_scene) : NULL,
+            app->demo ? bw_demo_blurb(app->demo_scene) : NULL);
         scene_manager_set_scene_state(app->scene_manager, BulwarkSceneWatch, WatchStateChild);
         scene_manager_next_scene(app->scene_manager, BulwarkSceneDetail);
         return true;

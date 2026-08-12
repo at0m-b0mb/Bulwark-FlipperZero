@@ -111,13 +111,21 @@ void wall_art_spectrum_labels(Canvas* canvas, int base_y, int marked_chan) {
     canvas_set_font(canvas, FontSecondary);
     for(size_t c = 0; c < BwChanCount; c++) {
         int x = wall_art_chan_x((BwChan)c);
-        canvas_draw_str(canvas, x, base_y, bw_chan_info[c].label);
+        const char* label = bw_chan_info[c].label;
+
         if((int)c == marked_chan) {
-            /* Where the radio is parked right now. Under the label, because
-             * the bar's own baseline is already a line. */
-            int w = (int)strlen(bw_chan_info[c].label) * 5;
-            canvas_draw_line(canvas, x, base_y + 1, x + w - 2, base_y + 1);
+            /* Where the radio is parked right now. Knocked out of a filled
+             * tab rather than underlined: an underline would have to live in
+             * the two pixels between this row and the status line. */
+            int w = (int)strlen(label) * 5 + 1;
+            canvas_draw_box(canvas, x - 1, base_y - 7, w + 1, 8);
+            canvas_set_color(canvas, ColorWhite);
+            canvas_draw_str(canvas, x, base_y, label);
+            canvas_set_color(canvas, ColorBlack);
+            continue;
         }
+
+        canvas_draw_str(canvas, x, base_y, label);
     }
 }
 

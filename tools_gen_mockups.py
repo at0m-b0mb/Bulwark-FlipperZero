@@ -21,10 +21,12 @@ IMAGES = HERE / "images"
 DUMP = HERE / "test" / "demo_dump.json"
 
 W, H = 128, 64
-SCALE = 4
-BEZEL = 10
-INK = 0
-PAPER = 1
+S = 6  # one Flipper pixel, in image pixels
+
+# The Flipper Zero's screen is a monochrome LCD behind an orange backlight:
+# warm orange where nothing is drawn, near-black where a pixel is on.
+PAPER = (255, 130, 0)
+INK = (10, 8, 4)
 
 # --- constants mirrored from views/ -----------------------------------------
 
@@ -70,18 +72,39 @@ def load_font(names, size):
     return ImageFont.load_default()
 
 
-# The Flipper's Secondary font is a 5-pixel face; Primary is a bold 8-pixel
-# one. Menlo at these sizes lands close enough that a line that fits here fits
-# there, which is the only property that matters.
-FONT_SECONDARY = load_font(["Menlo.ttc", "DejaVuSansMono.ttf"], 8)
-FONT_PRIMARY = load_font(["Menlo.ttc", "DejaVuSansMono.ttf"], 10)
+def fit_font(names, advance_px):
+    """Pick the point size whose advance matches the device font's.
+
+    The whole point of these mockups is that a line which fits here fits on
+    the Flipper, so the substitute face has to be at least as wide as the one
+    it stands in for. FontSecondary advances 5 pixels per character and
+    FontPrimary about 7; a face chosen by eye is usually narrower than that,
+    which would quietly hide real collisions.
+    """
+    best, best_err = None, None
+    for size in range(12 * S, 3 * S, -1):
+        font = load_font(names, size)
+        got = font.getlength("MMMMMMMMMM") / 10 / S
+        err = abs(got - advance_px)
+        if best_err is None or err < best_err:
+            best, best_err = font, err
+    return best
+
+
+FONT_SECONDARY = fit_font(["Andale Mono.ttf", "DejaVuSansMono.ttf"], 5.0)
+FONT_PRIMARY = fit_font(["Arial Bold.ttf", "DejaVuSans-Bold.ttf"], 7.0)
 
 
 class Screen:
-    """A 128x64 one-bit canvas with the drawing calls the firmware has."""
+    """The Flipper's screen, with the drawing calls the firmware has.
+
+    Everything is drawn straight at 6x, so the graphics land on the pixel grid
+    the way the LCD would show them while the text keeps its real shapes -
+    which is how the device actually looks, rather than a blurred upscale.
+    """
 
     def __init__(self):
-        self.img = Image.new("1", (W, H), PAPER)
+        self.img = Image.new("RGB", (W * S, H * S), PAPER)
         self.d = ImageDraw.Draw(self.img)
         self.color = INK
 
@@ -91,36 +114,57 @@ class Screen:
     def box(self, x, y, w, h):
         if w <= 0 or h <= 0:
             return
-        self.d.rectangle([x, y, x + w - 1, y + h - 1], fill=self.color)
+        self.d.rectangle(
+            [x * S, y * S, (x + w) * S - 1, (y + h) * S - 1], fill=self.color
+        )
 
     def frame(self, x, y, w, h):
-        self.d.rectangle([x, y, x + w - 1, y + h - 1], outline=self.color)
+        self.box(x, y, w, 1)
+        self.box(x, y + h - 1, w, 1)
+        self.box(x, y, 1, h)
+        self.box(x + w - 1, y, 1, h)
 
     def line(self, x0, y0, x1, y1):
-        self.d.line([x0, y0, x1, y1], fill=self.color)
+        """Bresenham, one Flipper pixel at a time, like canvas_draw_line."""
+        dx, dy = abs(x1 - x0), -abs(y1 - y0)
+        sx = 1 if x0 < x1 else -1
+        sy = 1 if y0 < y1 else -1
+        err = dx + dy
+        while True:
+            self.dot(x0, y0)
+            if x0 == x1 and y0 == y1:
+                break
+            e2 = 2 * err
+            if e2 >= dy:
+                err += dy
+                x0 += sx
+            if e2 <= dx:
+                err += dx
+                y0 += sy
 
     def dot(self, x, y):
-        self.d.point((x, y), fill=self.color)
+        self.d.rectangle(
+            [x * S, y * S, (x + 1) * S - 1, (y + 1) * S - 1], fill=self.color
+        )
 
     def str(self, x, baseline, text, font=FONT_SECONDARY):
-        self.d.text((x, baseline), text, font=font, fill=self.color, anchor="ls")
+        self.d.text(
+            (x * S, baseline * S), text, font=font, fill=self.color, anchor="ls"
+        )
 
     def str_right(self, x, baseline, text, font=FONT_SECONDARY):
-        self.d.text((x, baseline), text, font=font, fill=self.color, anchor="rs")
+        self.d.text(
+            (x * S, baseline * S), text, font=font, fill=self.color, anchor="rs"
+        )
 
     def str_center(self, x, baseline, text, font=FONT_SECONDARY):
-        self.d.text((x, baseline), text, font=font, fill=self.color, anchor="ms")
+        self.d.text(
+            (x * S, baseline * S), text, font=font, fill=self.color, anchor="ms"
+        )
 
     def save(self, path):
-        big = self.img.convert("L").resize((W * SCALE, H * SCALE), Image.NEAREST)
-        out = Image.new("L", (W * SCALE + BEZEL * 2, H * SCALE + BEZEL * 2), 90)
-        out.paste(big, (BEZEL, BEZEL))
-        frame = ImageDraw.Draw(out)
-        frame.rectangle(
-            [BEZEL - 1, BEZEL - 1, BEZEL + W * SCALE, BEZEL + H * SCALE], outline=40
-        )
         path.parent.mkdir(parents=True, exist_ok=True)
-        out.convert("RGB").save(path)
+        self.img.save(path)
         print(f"wrote {path.relative_to(HERE)}")
 
 
@@ -199,9 +243,13 @@ def screen_wall(scene, status_right, marked="38", baseline_ppt=None):
     s.line(0, WV_BAR_BASE + 1, 127, WV_BAR_BASE + 1)
     for c in scene["chan"]:
         x = chan_x(c["mhz"])
-        s.str(x, WV_LABEL_BASE, c["label"])
         if c["label"] == marked:
-            s.line(x, WV_LABEL_BASE + 1, x + len(c["label"]) * 5 - 2, WV_LABEL_BASE + 1)
+            s.box(x - 1, WV_LABEL_BASE - 7, len(c["label"]) * 5 + 2, 8)
+            s.set_color(PAPER)
+            s.str(x, WV_LABEL_BASE, c["label"])
+            s.set_color(INK)
+            continue
+        s.str(x, WV_LABEL_BASE, c["label"])
     watch_status(s, f"6s  #{scene['streak']}  {scene['rate_hz']}Hz", status_right)
     return s
 
@@ -230,7 +278,7 @@ def screen_trend(scene, history):
     return s
 
 
-def wrap(text, width=25):
+def wrap(text, width=23):
     words, lines, line = text.split(), [], ""
     for word in words:
         candidate = f"{line} {word}".strip()
