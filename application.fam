@@ -1,0 +1,22 @@
+App(
+    appid="bulwark",
+    name="Bulwark",
+    apptype=FlipperAppType.EXTERNAL,
+    entry_point="bulwark_app",
+    stack_size=4 * 1024,
+    fap_category="Bluetooth",
+    fap_icon="icons/bulwark_10px.png",
+    fap_author="at0m-b0mb",
+    fap_weburl="https://github.com/at0m-b0mb/Bulwark-FlipperZero",
+    fap_version="1.0",
+    # Explicit, so the recursive default does not sweep test/ (host-only code)
+    # into the firmware build.
+    sources=[
+        "bulwark.c",
+        "helpers/*.c",
+        "views/*.c",
+        "scenes/*.c",
+    ],
+    fap_description="Bluetooth LE popup-spam detector, on the Flipper's own radio, with no extra hardware. A spam board makes an iPhone ask about AirPods twenty times a minute and a laptop offer to pair with a mouse that does not exist - and at the radio layer it is one device hammering the three Bluetooth advertising channels far harder than anything honest does, from close range, without stopping. Bulwark parks the radio on those three frequencies (2402, 2426 and 2480 MHz) and on the three Wi-Fi channel centres between them, and scores what it hears on seven signals across four independent families: how much of the time the advertising channels are busy, whether the busyness is Bluetooth-shaped, how loud it is, and whether it is still there sweep after sweep. The caps are the design. A quiet band stops at 20 whatever its shape. A busy band that is not Bluetooth-shaped stops at 44, because ovens and video senders make the band busy too. SPAM LIKELY requires the tri-channel signature specifically, because nothing else in 2.4 GHz lights up those three frequencies in equal measure. And nothing ever reaches 100: in RF test mode the radio measures energy and decodes nothing, so Bulwark can hear the flood but never read one packet of it - no address, no name, no payload, no way to tell an attack from a shop full of beacons. Open any verdict and it shows every signal, what each was worth, and which ceiling held the score down. Includes a seven-panel walkthrough of how the attack works and how to turn the popups off, a stored baseline so it knows what your own places sound like, CSV sweep logs, and seven synthetic bands that need no hardware.",
+    requires=["gui"],
+)

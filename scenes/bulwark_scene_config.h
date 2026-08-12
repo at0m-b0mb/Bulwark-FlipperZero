@@ -1,0 +1,8 @@
+ADD_SCENE(bulwark, start, Start)
+ADD_SCENE(bulwark, watch, Watch)
+ADD_SCENE(bulwark, detail, Detail)
+ADD_SCENE(bulwark, baseline, Baseline)
+ADD_SCENE(bulwark, learn, Learn)
+ADD_SCENE(bulwark, log, Log)
+ADD_SCENE(bulwark, settings, Settings)
+ADD_SCENE(bulwark, about, About)
